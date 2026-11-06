@@ -1,0 +1,46 @@
+# ---------- Terraform ----------
+# State files can contain secrets and resource IDs. State lives in S3, never in Git.
+*.tfstate
+*.tfstate.*
+.terraform/
+crash.log
+crash.*.log
+*.tfplan
+tfplan
+# Real variable values stay local. Commit terraform.tfvars.example instead.
+*.tfvars
+*.tfvars.json
+!*.tfvars.example
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+.terraformrc
+terraform.rc
+# NOTE: .terraform.lock.hcl IS committed (pins provider versions for reproducibility).
+
+# ---------- Secrets / credentials ----------
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+.aws/
+
+# ---------- Python ----------
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.pytest_cache/
+.coverage
+htmlcov/
+*.egg-info/
+.mypy_cache/
+.ruff_cache/
+
+# ---------- OS / editor ----------
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/

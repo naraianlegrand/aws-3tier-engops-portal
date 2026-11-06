@@ -1,0 +1,4 @@
+# Force LF line endings. EC2 user-data and shell scripts break on Linux with Windows CRLF.
+* text=auto eol=lf
+*.png binary
+*.jpg binary
