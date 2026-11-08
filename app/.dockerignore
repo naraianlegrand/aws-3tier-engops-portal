@@ -1,0 +1,7 @@
+tests/
+.venv/
+**/__pycache__/
+.pytest_cache/
+*.db
+docker-compose.yml
+requirements-dev.txt

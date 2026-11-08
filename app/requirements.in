@@ -1,0 +1,9 @@
+fastapi
+uvicorn
+sqlalchemy
+alembic
+psycopg[binary]
+pydantic-settings
+jinja2
+python-multipart
+boto3

@@ -1,0 +1,37 @@
+# Local development only: the app + a throwaway Postgres, on your laptop. Costs nothing.
+#   docker compose up --build      then open http://localhost:8000
+#   docker compose down -v         stop and delete the local database
+services:
+  db:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_DB: engops
+      POSTGRES_USER: engops
+      # No password at all: "trust" auth is only acceptable because this DB is local,
+      # has no published port, and is reachable only by the app container.
+      POSTGRES_HOST_AUTH_METHOD: trust
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U engops -d engops"]
+      interval: 2s
+      timeout: 3s
+      retries: 15
+
+  app:
+    build: .
+    environment:
+      ENGOPS_DATABASE_URL: postgresql+psycopg://engops@db:5432/engops
+      ENGOPS_STORAGE_BACKEND: local
+      ENGOPS_UPLOAD_DIR: /data/uploads
+    ports:
+      - "8000:8000"
+    volumes:
+      - uploads:/data/uploads
+    depends_on:
+      db:
+        condition: service_healthy
+
+volumes:
+  pgdata:
+  uploads:

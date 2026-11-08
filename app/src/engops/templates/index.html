@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% block content %}
+<form class="card" method="post" action="/requests">
+  <strong>New request</strong>
+  {% if errors %}
+  <ul class="errors">{% for e in errors %}<li>{{ e }}</li>{% endfor %}</ul>
+  {% endif %}
+  <input name="title" placeholder="Title, e.g. Revit crashes when opening Level 3 model" value="{{ form.title or '' }}" required>
+  <textarea name="description" rows="3" placeholder="Details">{{ form.description or '' }}</textarea>
+  <select name="category" required>
+    {% for c in categories %}<option value="{{ c }}" {% if form.category == c %}selected{% endif %}>{{ c }}</option>{% endfor %}
+  </select>
+  <input name="requester" placeholder="Your name" value="{{ form.requester or '' }}" required>
+  <button type="submit">Create request</button>
+</form>
+
+<p>
+  Filter:
+  <a href="/">all</a>
+  {% for s in statuses %} · <a href="/?status={{ s }}">{{ s }}</a>{% endfor %}
+</p>
+
+<table>
+  <thead><tr><th>#</th><th>Title</th><th>Category</th><th>Status</th><th>Requester</th><th>Created</th></tr></thead>
+  <tbody>
+  {% for r in requests %}
+    <tr>
+      <td>{{ r.id }}</td>
+      <td><a href="/requests/{{ r.id }}">{{ r.title }}</a></td>
+      <td>{{ r.category }}</td>
+      <td><span class="badge {{ r.status }}">{{ r.status }}</span></td>
+      <td>{{ r.requester }}</td>
+      <td><small>{{ r.created_at.strftime('%Y-%m-%d %H:%M') if r.created_at else '' }}</small></td>
+    </tr>
+  {% else %}
+    <tr><td colspan="6"><small>No requests{% if status_filter %} with status "{{ status_filter }}"{% endif %}.</small></td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% endblock %}

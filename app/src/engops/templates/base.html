@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}EngOps Portal{% endblock %}</title>
+  <style>
+    body { font-family: system-ui, sans-serif; max-width: 960px; margin: 0 auto; padding: 16px; color: #1f2933; }
+    header { display: flex; justify-content: space-between; align-items: baseline; border-bottom: 1px solid #d9e2ec; margin-bottom: 16px; }
+    header a { color: inherit; text-decoration: none; }
+    table { width: 100%; border-collapse: collapse; }
+    th, td { text-align: left; padding: 6px 8px; border-bottom: 1px solid #e4e7eb; vertical-align: top; }
+    form.card { border: 1px solid #d9e2ec; border-radius: 6px; padding: 12px; margin: 16px 0; display: grid; gap: 8px; }
+    input, select, textarea, button { font: inherit; padding: 6px; }
+    .badge { padding: 2px 8px; border-radius: 10px; font-size: 0.85em; background: #e4e7eb; }
+    .open { background: #fde68a; } .in_progress { background: #bfdbfe; } .resolved { background: #bbf7d0; }
+    .errors { color: #b91c1c; }
+    small { color: #616e7c; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1><a href="/">EngOps Portal</a></h1>
+    <small>Internal tool requests</small>
+  </header>
+  {% block content %}{% endblock %}
+</body>
+</html>
