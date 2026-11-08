@@ -1,64 +1,119 @@
 # EngOps Portal: AWS 3-Tier Architecture with Terraform
 
-> **Status: 🚧 Phase 0 in progress. Nothing is deployed yet.**
-> This README only describes what actually works. Planned items are labelled *planned*.
+> **Status: 🚧 Phase 0 in progress (Steps 1–4 of 9 done).**
+> The network, security and data tiers are written in Terraform and have been deployed, checked
+> in the AWS console, and destroyed. The app, compute tier, monitoring and CI/CD are *planned*.
+> This README only describes what actually works.
 
 An internal request tracker for engineering teams ("Revit crashes on file X", "need a new template"),
 deployed as a 3-tier stack on AWS (`ca-central-1`) and provisioned entirely with Terraform.
 
-## Architecture (planned)
+## Architecture
 
 ```mermaid
 flowchart TB
     U[User / Browser] --> ALB
     subgraph VPC["VPC 10.0.0.0/16 · ca-central-1 · 2 AZs"]
         subgraph PUB["Public subnets"]
-            ALB[Application Load Balancer]
+            ALB[Application Load Balancer<br/><i>planned</i>]
             NAT[NAT Gateway]
         end
         subgraph APP["Private app subnets"]
-            ASG[EC2 Auto Scaling Group<br/>FastAPI in Docker]
+            ASG[EC2 Auto Scaling Group<br/>FastAPI in Docker<br/><i>planned</i>]
         end
         subgraph DB["Private DB subnets"]
             RDS[(RDS PostgreSQL)]
         end
+        S3EP[S3 Gateway Endpoint]
     end
     ALB --> ASG --> RDS
-    ASG --> S3[(S3 bucket)]
+    ASG --> S3EP --> S3[(S3 bucket)]
     ASG -.-> NAT
+    SM[Secrets Manager] -. DB credentials .-> ASG
 ```
 
-| Tier | Component | Subnets |
-|---|---|---|
-| Presentation | Application Load Balancer | Public |
-| Application | FastAPI in Docker on EC2 (Auto Scaling Group) | Private app |
-| Data | RDS PostgreSQL + S3 | Private DB / S3 |
+| Tier | Component | Subnets | Status |
+|---|---|---|---|
+| Presentation | Application Load Balancer | Public | Planned (Step 6) |
+| Application | FastAPI in Docker on EC2 (Auto Scaling Group) | Private app | Planned (Steps 5–6) |
+| Data | RDS PostgreSQL + S3 | Private DB / S3 | ✅ Built and tested |
 
-## Progress
+### Security group chain
+
+```
+Internet --80--> [alb-sg] --8000--> [app-sg] --5432--> [db-sg]
+                 from 0.0.0.0/0     only from alb-sg    only from app-sg
+```
+Outbound traffic is restricted too. The ALB can only reach the app, the app can only reach the DB
+plus HTTPS to AWS APIs, and the DB has no outbound rules. No SSH: admin access is through SSM Session Manager.
+
+## What's built
 
 | Step | Description | Status |
 |---|---|---|
 | 0 | Repo scaffold | ✅ Done |
-| 1 | Setup & safety (budget alert, remote state) | ✅ Deployed (S3 state bucket + budget alerts) |
-| 2 | Network module | ✅ Deployed (NAT switched off until Step 6) |
-| 3 | Security module | ⏳ In progress |
-| 4 | Data module | Planned |
-| 5 | App (FastAPI + Docker) | Planned |
-| 6 | Compute module (ALB + ASG) | Planned |
-| 7 | Monitoring | Planned |
+| 1 | Bootstrap: S3 remote-state bucket (native locking) + AWS Budgets alerts | ✅ Deployed, **running** (≈ $0/month) |
+| 2 | Network: VPC, 6 subnets across 2 AZs, IGW, single NAT (switchable), S3 gateway endpoint | ✅ Deployed, tested, destroyed |
+| 3 | Security: chained security groups, least-privilege EC2 role + instance profile | ✅ Deployed, tested, destroyed |
+| 4 | Data: RDS PostgreSQL (private, encrypted, RDS-managed secret) + private S3 bucket | ✅ Deployed, tested, destroyed |
+| 5 | App (FastAPI + Docker + ECR) | ⏳ Next |
+| 6 | Compute (launch template, ASG, ALB) | Planned |
+| 7 | Monitoring (CloudWatch alarms, SNS) | Planned |
 | 8 | CI/CD (GitHub Actions + OIDC) | Planned |
-| 9 | Full apply → test → destroy → re-apply | Planned |
+| 9 | Full apply → test → destroy → re-apply, with screenshots | Planned |
 
-## Repo layout
+**Running in AWS right now:** only the bootstrap layer (state bucket + budget). The dev environment
+is destroyed between sessions to save cost.
 
-```
-bootstrap/       one-time: S3 bucket for Terraform remote state
-infra/modules/   network, security, compute, data, monitoring
-infra/envs/dev/  the dev environment that wires the modules together
-app/             FastAPI application, tests, Dockerfile
-docs/adr/        Architecture Decision Records
+## Deploy and destroy
+
+Prerequisites: Terraform ≥ 1.10, AWS CLI with a profile named `engops`.
+
+```powershell
+# One-time (already done): remote state bucket + budget alerts
+cd bootstrap
+Copy-Item terraform.tfvars.example terraform.tfvars   # set budget_alert_email
+terraform init; terraform apply
+
+# Dev environment
+cd ..\infra\envs\dev
+$env:AWS_PROFILE = "engops"
+terraform init
+terraform plan -var="enable_nat_gateway=false" -out=tfplan   # NAT off until the app needs it
+terraform apply tfplan
+
+# Tear down (bootstrap is separate and stays)
+terraform destroy -var="enable_nat_gateway=false"
 ```
 
 ## Cost
 
-Deploy, test, then destroy on the same day. Cost estimates will be added as each module is built.
+| Resource | Approx. cost while deployed (ca-central-1) |
+|---|---|
+| Bootstrap (state bucket, budget) | ≈ $0/month, always on |
+| VPC, subnets, route tables, IGW, S3 endpoint, security groups, IAM | Free |
+| NAT Gateway + Elastic IP | ≈ $0.055/hr (off by default for now) |
+| RDS db.t4g.micro + 20 GB gp3 | ≈ $0.02/hr |
+| Secrets Manager (1 secret) | ≈ $0.40/month, prorated |
+
+Workflow: apply → test → destroy the same day. Budget alerts fire at $1 and $10.
+
+## Architecture decisions
+
+| ADR | Decision |
+|---|---|
+| [0001](docs/adr/0001-region-ca-central-1.md) | Region: ca-central-1, for Canadian data residency |
+| [0002](docs/adr/0002-remote-state-and-bootstrap-layer.md) | S3 remote state with native locking; budget lives in a never-destroyed bootstrap layer |
+| [0003](docs/adr/0003-single-nat-gateway.md) | One NAT Gateway instead of one per AZ (cost vs. HA) |
+| [0004](docs/adr/0004-ssm-instead-of-ssh.md) | SSM Session Manager instead of SSH or a bastion host |
+| [0005](docs/adr/0005-db-credentials-rds-managed-secret.md) | RDS-managed DB password in Secrets Manager, never in code or state |
+
+## Repo layout
+
+```
+bootstrap/       one-time, never destroyed: Terraform state bucket + budget alerts
+infra/modules/   network, security, data (built) · compute, monitoring (planned)
+infra/envs/dev/  the dev environment that wires the modules together
+app/             FastAPI application, tests, Dockerfile (planned)
+docs/adr/        Architecture Decision Records
+```

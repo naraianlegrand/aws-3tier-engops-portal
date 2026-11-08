@@ -145,14 +145,14 @@ aws-3tier-engops-portal/
 ├── docs/
 │   ├── adr/                   # 0001-region.md, 0002-single-nat.md, ...
 │   └── interview-notes.md     # Karthik's own explanations (he writes these)
-├── bootstrap/                 # one-time: S3 bucket for Terraform remote state
+├── bootstrap/                 # one-time, never destroyed: Terraform state bucket + budget (ADR 0002)
 ├── infra/
 │   ├── modules/
 │   │   ├── network/           # VPC, subnets, IGW, NAT, route tables, S3 endpoint
 │   │   ├── security/          # security groups, IAM roles/policies
 │   │   ├── compute/           # launch template, ASG, ALB, target group
 │   │   ├── data/              # RDS, DB subnet group, S3 bucket
-│   │   └── monitoring/        # CloudWatch alarms, log groups, SNS, budget
+│   │   └── monitoring/        # CloudWatch alarms, log groups, SNS
 │   └── envs/dev/              # main.tf, variables.tf, outputs.tf, backend.tf
 ├── app/
 │   ├── src/  tests/  Dockerfile  requirements.txt
