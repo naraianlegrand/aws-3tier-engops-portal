@@ -40,8 +40,8 @@ flowchart TB
 |---|---|---|
 | 0 | Repo scaffold | ✅ Done |
 | 1 | Setup & safety (budget alert, remote state) | ✅ Deployed (S3 state bucket + budget alerts) |
-| 2 | Network module | ⏳ Next |
-| 3 | Security module | Planned |
+| 2 | Network module | ✅ Deployed (NAT switched off until Step 6) |
+| 3 | Security module | ⏳ In progress |
 | 4 | Data module | Planned |
 | 5 | App (FastAPI + Docker) | Planned |
 | 6 | Compute module (ALB + ASG) | Planned |
