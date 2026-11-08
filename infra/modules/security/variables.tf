@@ -24,6 +24,11 @@ variable "ecr_repository_name" {
   type        = string
 }
 
+variable "db_secret_arn" {
+  description = "ARN of the RDS-managed secret. The app may read this one secret only."
+  type        = string
+}
+
 variable "app_log_group_name" {
   description = "CloudWatch log group the app container writes to."
   type        = string

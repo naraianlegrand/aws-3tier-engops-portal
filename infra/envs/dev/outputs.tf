@@ -29,3 +29,15 @@ output "security_group_ids" {
 output "app_role_name" {
   value = module.security.app_role_name
 }
+
+output "db_address" {
+  value = module.data.db_address
+}
+
+output "db_secret_arn" {
+  value = module.data.db_secret_arn
+}
+
+output "files_bucket_name" {
+  value = module.data.files_bucket_name
+}

@@ -11,8 +11,7 @@ output "db_sg_id" {
 }
 
 output "app_role_name" {
-  description = "Step 4 attaches the DB-secret read permission to this role."
-  value       = aws_iam_role.app.name
+  value = aws_iam_role.app.name
 }
 
 output "app_instance_profile_name" {

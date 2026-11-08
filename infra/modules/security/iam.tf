@@ -95,7 +95,14 @@ data "aws_iam_policy_document" "app" {
     resources = ["${local.log_group_arn}:*"]
   }
 
-  # Step 4 adds: secretsmanager:GetSecretValue on the DB secret ARN only.
+  # Secrets Manager: read ONE secret, the DB credentials RDS created.
+  # The secret uses the AWS-managed key aws/secretsmanager, so no separate kms:Decrypt grant is needed.
+  statement {
+    sid       = "ReadDbSecret"
+    effect    = "Allow"
+    actions   = ["secretsmanager:GetSecretValue"]
+    resources = [var.db_secret_arn]
+  }
 }
 
 resource "aws_iam_role_policy" "app" {

@@ -35,4 +35,19 @@ module "security" {
   files_bucket_name   = local.files_bucket_name
   ecr_repository_name = local.ecr_repository_name
   app_log_group_name  = local.app_log_group_name
+  db_secret_arn       = module.data.db_secret_arn
+}
+
+# Note: data uses security's db-sg, and security uses data's secret ARN.
+# That's fine: Terraform orders individual resources, not whole modules
+# (db-sg -> RDS -> secret -> IAM policy), so there's no cycle.
+module "data" {
+  source = "../../modules/data"
+
+  name          = var.name
+  db_subnet_ids = module.network.db_subnet_ids
+  db_sg_id      = module.security.db_sg_id
+
+  files_bucket_name    = local.files_bucket_name
+  force_destroy_bucket = true # dev only: destroy after every demo
 }
