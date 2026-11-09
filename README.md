@@ -56,13 +56,13 @@ plus HTTPS to AWS APIs, and the DB has no outbound rules. No SSH: admin access i
 | 2 | Network: VPC, 6 subnets across 2 AZs, IGW, single NAT (switchable), S3 gateway endpoint | ✅ Deployed, tested, destroyed |
 | 3 | Security: chained security groups, least-privilege EC2 role + instance profile | ✅ Deployed, tested, destroyed |
 | 4 | Data: RDS PostgreSQL (private, encrypted, RDS-managed secret) + private S3 bucket | ✅ Deployed, tested, destroyed |
-| 5 | App (FastAPI + Docker + ECR) | ⏳ In progress: app runs locally (SQLite) with 18 passing tests; image build moved to GitHub Actions (local Docker blocked by a WSL bug); ECR push next |
-| 6 | Compute (launch template, ASG, ALB) | Planned |
+| 5 | App (FastAPI + Docker + ECR) | ✅ Done: app tested locally (SQLite) with 18 passing tests; GitHub Actions tests, builds and pushes the image to ECR via OIDC (local Docker blocked by a WSL bug, see ADR 0007) |
+| 6 | Compute (launch template, ASG, ALB) | ⏳ Next |
 | 7 | Monitoring (CloudWatch alarms, SNS) | Planned |
 | 8 | CI/CD (GitHub Actions + OIDC) | Planned |
 | 9 | Full apply → test → destroy → re-apply, with screenshots | Planned |
 
-**Running in AWS right now:** only the bootstrap layer (state bucket + budget). The dev environment
+**Running in AWS right now:** only the bootstrap layer (state bucket, budget, ECR repo, GitHub OIDC role). The dev environment
 is destroyed between sessions to save cost.
 
 ## Deploy and destroy
@@ -118,6 +118,10 @@ Workflow: apply → test → destroy the same day. Budget alerts fire at $1 and 
 - Single NAT Gateway, single-AZ RDS (cost tradeoffs, see ADR 0003).
 - HTTP only (no domain/certificate yet). The app has no user authentication.
 - Migrations run at container start. Production would run them as a separate deploy step.
+- ECR scan-on-push reports 4 HIGH CVEs, all in Debian base-image libraries (glibc, zlib) from
+  `python:3.12-slim`, none in app dependencies. Production would rebuild on a schedule to pick up
+  patched base images, and fail CI above a severity threshold.
+- GitHub Actions are pinned to major version tags. Production would pin them to commit SHAs.
 
 ## Repo layout
 
