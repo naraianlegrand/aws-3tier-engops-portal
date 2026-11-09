@@ -1,9 +1,10 @@
 # EngOps Portal: AWS 3-Tier Architecture with Terraform
 
-> **Status: 🚧 Phase 0 in progress (Steps 1–7 of 9 done).**
+> **Status: 🚧 Phase 0 in progress (Steps 1–8 of 9 done).**
 > The full 3-tier stack (VPC, ALB, EC2 Auto Scaling Group, RDS, S3) has been deployed with Terraform,
 > used end to end through the load balancer, crash-tested (self-healing + alarm), and destroyed.
-> Remaining: CI for Terraform (Step 8) and the final destroy/re-apply proof (Step 9).
+> CI tests and ships the app image and checks every infrastructure PR. Remaining: the final
+> apply → destroy → re-apply proof with screenshots (Step 9).
 > This README only describes what actually works.
 
 An internal request tracker for engineering teams ("Revit crashes on file X", "need a new template"),
@@ -60,10 +61,11 @@ plus HTTPS to AWS APIs, and the DB has no outbound rules. No SSH: admin access i
 | 5 | App (FastAPI + Docker + ECR) | ✅ Done: app tested locally (SQLite) with 18 passing tests; GitHub Actions tests, builds and pushes the image to ECR via OIDC (local Docker blocked by a WSL bug, see ADR 0007) |
 | 6 | Compute (launch template, ASG, ALB) | ✅ Deployed and tested: app used through the ALB (request created, file uploaded to S3, downloaded), container logs in CloudWatch, password read from Secrets Manager. **Self-healing tested:** stopped the container, and the ASG replaced the instance automatically |
 | 7 | Monitoring (CloudWatch alarms, SNS email) | ✅ Deployed: `no-healthy-hosts` alarm went OK → ALARM → OK during the crash test. Email delivery not yet verified (subscription was not confirmed) |
-| 8 | CI/CD (GitHub Actions + OIDC) | ⏳ In progress: app pipeline done (test, build, push to ECR); Terraform PR checks (fmt, validate, tflint, Checkov, read-only plan) in review |
-| 9 | Full apply → test → destroy → re-apply, with screenshots | Planned |
+| 8 | CI/CD (GitHub Actions + OIDC) | ✅ Done: app pipeline (test, build, push to ECR) and Terraform PR checks (fmt, validate, tflint, Checkov, read-only plan), both via OIDC with no stored AWS keys. First infra change merged through [PR #1](https://github.com/naraianlegrand/aws-3tier-engops-portal/pull/1) |
+| 9 | Full apply → test → destroy → re-apply, with screenshots | ⏳ Next |
 
-**Running in AWS right now:** only the bootstrap layer (state bucket, budget, ECR repo, GitHub OIDC role). The dev environment
+**Running in AWS right now:** only the bootstrap layer (state bucket, budget, alerts SNS topic, ECR repo,
+GitHub OIDC roles). All of it costs about $0/month. The dev environment
 is destroyed between sessions to save cost.
 
 ## Deploy and destroy
@@ -126,6 +128,8 @@ Workflow: apply → test → destroy the same day. Budget alerts fire at $1 and 
   `python:3.12-slim`, none in app dependencies. Production would rebuild on a schedule to pick up
   patched base images, and fail CI above a severity threshold.
 - GitHub Actions are pinned to major version tags. Production would pin them to commit SHAs.
+- Checkov findings accepted for dev (cost, no domain/certificate, destroyed each session) are listed with
+  reasons in [ADR 0010](docs/adr/0010-terraform-ci-and-accepted-risks.md).
 
 ## Repo layout
 
