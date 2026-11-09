@@ -15,7 +15,12 @@ CI needs to push images to ECR, which requires AWS credentials.
 ## Decision
 OIDC. The role `engops-portal-github-ci` can be assumed only when:
 - the audience is `sts.amazonaws.com`, and
-- the subject is exactly `repo:naraianlegrand/aws-3tier-engops-portal:ref:refs/heads/main`.
+- the subject is exactly `repo:naraianlegrand@48866785/aws-3tier-engops-portal@1448775678:ref:refs/heads/main`.
+
+  This is GitHub's *immutable subject* format, which includes numeric owner and repo IDs. My first version
+  used the name-only format (`repo:owner/name:...`), and AWS correctly rejected the token. The ID format is
+  safer: if the repo were deleted and someone recreated it under the same name, their tokens would carry
+  different IDs and couldn't assume the role.
 
 Its permissions: push to the one `engops-portal` ECR repository (plus `ecr:GetAuthorizationToken`,
 which AWS requires on `*`).

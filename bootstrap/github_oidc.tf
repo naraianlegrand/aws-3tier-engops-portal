@@ -30,10 +30,12 @@ data "aws_iam_policy_document" "github_ci_trust" {
     }
 
     # Exact match: a fork, another repo, another branch or a pull request can't use this role.
+    # GitHub's "immutable subject" includes numeric owner/repo IDs, so a repo recreated later
+    # under the same name (by anyone) still can't assume this role.
     condition {
       test     = "StringEquals"
       variable = "token.actions.githubusercontent.com:sub"
-      values   = ["repo:${var.github_repository}:ref:refs/heads/main"]
+      values   = ["${var.github_oidc_sub_prefix}:ref:refs/heads/main"]
     }
   }
 }

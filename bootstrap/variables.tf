@@ -21,6 +21,15 @@ variable "github_repository" {
   default     = "naraianlegrand/aws-3tier-engops-portal"
 }
 
+variable "github_oidc_sub_prefix" {
+  description = <<-EOT
+    Start of the OIDC 'sub' claim GitHub sends for this repo (immutable format with numeric IDs).
+    Look it up with: gh api repos/OWNER/REPO/actions/oidc/customization/sub  (field sub_claim_prefix)
+  EOT
+  type        = string
+  default     = "repo:naraianlegrand@48866785/aws-3tier-engops-portal@1448775678"
+}
+
 variable "monthly_budget_usd" {
   description = "Monthly budget limit in USD."
   type        = number
