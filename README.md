@@ -57,8 +57,8 @@ plus HTTPS to AWS APIs, and the DB has no outbound rules. No SSH: admin access i
 | 3 | Security: chained security groups, least-privilege EC2 role + instance profile | ✅ Deployed, tested, destroyed |
 | 4 | Data: RDS PostgreSQL (private, encrypted, RDS-managed secret) + private S3 bucket | ✅ Deployed, tested, destroyed |
 | 5 | App (FastAPI + Docker + ECR) | ✅ Done: app tested locally (SQLite) with 18 passing tests; GitHub Actions tests, builds and pushes the image to ECR via OIDC (local Docker blocked by a WSL bug, see ADR 0007) |
-| 6 | Compute (launch template, ASG, ALB) | ⏳ In progress: code written, not yet deployed |
-| 7 | Monitoring (CloudWatch alarms, SNS) | Planned |
+| 6 | Compute (launch template, ASG, ALB) | ✅ Deployed: app served through the ALB, target healthy, container logs in CloudWatch, password read from Secrets Manager |
+| 7 | Monitoring (CloudWatch alarms, SNS email) | ⏳ In progress: code written, not yet deployed |
 | 8 | CI/CD (GitHub Actions + OIDC) | Planned |
 | 9 | Full apply → test → destroy → re-apply, with screenshots | Planned |
 

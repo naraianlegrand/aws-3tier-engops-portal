@@ -8,6 +8,10 @@ output "app_image" {
   value       = local.app_image_uri
 }
 
+output "alarm_names" {
+  value = module.monitoring.alarm_names
+}
+
 output "asg_name" {
   value = module.compute.asg_name
 }

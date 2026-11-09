@@ -25,6 +25,11 @@ variable "alb_ingress_cidrs" {
   type        = list(string)
 }
 
+variable "alarm_email" {
+  description = "Email for CloudWatch alarm notifications, set in terraform.tfvars (gitignored)."
+  type        = string
+}
+
 variable "app_image_tag" {
   description = "Image tag (git commit ID) to deploy. null = the most recently pushed image in ECR."
   type        = string

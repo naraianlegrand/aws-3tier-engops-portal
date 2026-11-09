@@ -3,6 +3,11 @@ output "db_address" {
   value       = aws_db_instance.this.address
 }
 
+output "db_instance_identifier" {
+  description = "For CloudWatch RDS alarms."
+  value       = aws_db_instance.this.identifier
+}
+
 output "db_port" {
   value = aws_db_instance.this.port
 }

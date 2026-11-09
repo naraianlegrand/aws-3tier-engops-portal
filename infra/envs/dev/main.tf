@@ -99,3 +99,15 @@ module "compute" {
   files_bucket_name = module.data.files_bucket_name
   log_group_name    = local.app_log_group_name
 }
+
+module "monitoring" {
+  source = "../../modules/monitoring"
+
+  name        = var.name
+  alarm_email = var.alarm_email
+
+  alb_arn_suffix          = module.compute.alb_arn_suffix
+  target_group_arn_suffix = module.compute.target_group_arn_suffix
+  asg_name                = module.compute.asg_name
+  db_instance_identifier  = module.data.db_instance_identifier
+}
