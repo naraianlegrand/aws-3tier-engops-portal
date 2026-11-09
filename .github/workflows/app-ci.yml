@@ -61,6 +61,8 @@ jobs:
           REGISTRY: ${{ steps.ecr.outputs.registry }}
         run: |
           IMAGE="$REGISTRY/$ECR_REPOSITORY:$GITHUB_SHA"
-          docker build -t "$IMAGE" app
+          # One plain linux/amd64 image (matches the x86 EC2 instances). Without --provenance=false,
+          # Docker pushes an index + attestation bundle that ECR basic scanning can't scan.
+          docker build --platform linux/amd64 --provenance=false -t "$IMAGE" app
           docker push "$IMAGE"
           echo "Pushed \`$IMAGE\`" >> "$GITHUB_STEP_SUMMARY"
