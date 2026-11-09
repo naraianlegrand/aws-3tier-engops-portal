@@ -3,6 +3,10 @@
 # The app reaches it through the VPC's S3 gateway endpoint, not the internet.
 # ---------------------------------------------------------------------------
 resource "aws_s3_bucket" "files" {
+  #checkov:skip=CKV_AWS_145:SSE-S3 (AES256) encryption is used; SSE-KMS with a customer key costs ~$1/month plus requests.
+  #checkov:skip=CKV_AWS_144:Dev - cross-region replication doubles storage and conflicts with ca-central-1 data residency (ADR 0001).
+  #checkov:skip=CKV_AWS_18:Dev cost/noise - server access logging needs a separate log bucket. Production: enable.
+  #checkov:skip=CKV2_AWS_62:No consumer for S3 event notifications yet.
   bucket = var.files_bucket_name
 
   # Dev: lets `terraform destroy` empty and delete the bucket. Production: false.

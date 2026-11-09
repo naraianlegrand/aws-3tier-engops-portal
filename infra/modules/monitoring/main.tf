@@ -1,24 +1,10 @@
-# ---------------------------------------------------------------------------
-# SNS topic: alarms publish here, and SNS emails the subscriber.
-# Not encrypted: CloudWatch can't publish to a topic encrypted with the AWS-managed
-# aws/sns key; it would need a customer-managed KMS key (~$1/month). Alerts contain no secrets.
-# ---------------------------------------------------------------------------
-resource "aws_sns_topic" "alerts" {
-  name = "${var.name}-alerts"
-}
-
-resource "aws_sns_topic_subscription" "email" {
-  topic_arn = aws_sns_topic.alerts.arn
-  protocol  = "email"
-  endpoint  = var.alarm_email
-}
-
+# Alarms publish to the permanent SNS topic in bootstrap/ (email confirmed once, survives destroy).
 locals {
   alb_dimensions = {
     LoadBalancer = var.alb_arn_suffix
     TargetGroup  = var.target_group_arn_suffix
   }
-  actions = [aws_sns_topic.alerts.arn]
+  actions = [var.sns_topic_arn]
 }
 
 # ---------------------------------------------------------------------------

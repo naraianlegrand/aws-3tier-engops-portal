@@ -11,6 +11,13 @@ resource "aws_db_subnet_group" "this" {
 }
 
 resource "aws_db_instance" "this" {
+  #checkov:skip=CKV_AWS_157:Dev cost - Multi-AZ doubles the price. Production: multi_az = true (ADR 0003 / README known gaps).
+  #checkov:skip=CKV_AWS_293:Dev - destroyed after every session. Production: deletion_protection = true.
+  #checkov:skip=CKV_AWS_118:Dev cost - enhanced monitoring needs an extra IAM role and bills CloudWatch. Basic RDS metrics are used for alarms.
+  #checkov:skip=CKV_AWS_129:Dev cost - exporting PostgreSQL logs bills CloudWatch ingestion. Production: export postgresql logs.
+  #checkov:skip=CKV2_AWS_30:Dev cost - same as CKV_AWS_129 (query logging via log export).
+  #checkov:skip=CKV_AWS_353:Dev - Performance Insights not needed for a demo workload.
+  #checkov:skip=CKV_AWS_161:App authenticates with the RDS-managed Secrets Manager password (ADR 0005). Production: IAM database authentication for the app user.
   identifier     = "${var.name}-postgres"
   engine         = "postgres"
   engine_version = var.db_engine_version

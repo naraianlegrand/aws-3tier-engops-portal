@@ -5,6 +5,10 @@ data "aws_caller_identity" "current" {}
 # Terraform remote state bucket
 # ---------------------------------------------------------------------------
 resource "aws_s3_bucket" "tfstate" {
+  #checkov:skip=CKV_AWS_145:SSE-S3 (AES256) encryption is used; SSE-KMS with a customer key costs ~$1/month (ADR 0002).
+  #checkov:skip=CKV_AWS_144:Cross-region replication would copy state outside Canada (ADR 0001). Versioning covers recovery.
+  #checkov:skip=CKV_AWS_18:Access logging needs a separate log bucket. Production: enable, or use CloudTrail data events.
+  #checkov:skip=CKV2_AWS_62:No consumer for S3 event notifications.
   # S3 bucket names are global across ALL AWS accounts; the account ID makes it unique.
   bucket = "engops-portal-tfstate-${data.aws_caller_identity.current.account_id}"
 

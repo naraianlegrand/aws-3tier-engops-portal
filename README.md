@@ -60,7 +60,7 @@ plus HTTPS to AWS APIs, and the DB has no outbound rules. No SSH: admin access i
 | 5 | App (FastAPI + Docker + ECR) | ✅ Done: app tested locally (SQLite) with 18 passing tests; GitHub Actions tests, builds and pushes the image to ECR via OIDC (local Docker blocked by a WSL bug, see ADR 0007) |
 | 6 | Compute (launch template, ASG, ALB) | ✅ Deployed and tested: app used through the ALB (request created, file uploaded to S3, downloaded), container logs in CloudWatch, password read from Secrets Manager. **Self-healing tested:** stopped the container, and the ASG replaced the instance automatically |
 | 7 | Monitoring (CloudWatch alarms, SNS email) | ✅ Deployed: `no-healthy-hosts` alarm went OK → ALARM → OK during the crash test. Email delivery not yet verified (subscription was not confirmed) |
-| 8 | CI/CD (GitHub Actions + OIDC) | Planned |
+| 8 | CI/CD (GitHub Actions + OIDC) | ⏳ In progress: app pipeline done (test, build, push to ECR); Terraform PR checks (fmt, validate, tflint, Checkov, read-only plan) in review |
 | 9 | Full apply → test → destroy → re-apply, with screenshots | Planned |
 
 **Running in AWS right now:** only the bootstrap layer (state bucket, budget, ECR repo, GitHub OIDC role). The dev environment
@@ -113,6 +113,7 @@ Workflow: apply → test → destroy the same day. Budget alerts fire at $1 and 
 | [0007](docs/adr/0007-ecr-in-bootstrap-immutable-tags.md) | ECR in bootstrap, immutable commit-ID tags, images built in CI |
 | [0008](docs/adr/0008-github-oidc-for-ci.md) | GitHub Actions uses OIDC (no stored AWS keys), scoped to this repo's main branch |
 | [0009](docs/adr/0009-compute-asg-alb-restricted-ingress.md) | ASG behind an ALB with ELB health checks, CPU scaling, IMDSv2; ALB open to my IP only |
+| [0010](docs/adr/0010-terraform-ci-and-accepted-risks.md) | Terraform CI on PRs (fmt, validate, tflint, Checkov, plan) with a read-only OIDC role; accepted-risk register |
 
 ## Known gaps (what I'd tighten for production)
 

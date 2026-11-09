@@ -12,6 +12,7 @@
 # ---------------------------------------------------------------------------
 
 resource "aws_security_group" "alb" {
+  #checkov:skip=CKV2_AWS_5:False positive - attached to the ALB in the compute module (Checkov can't follow cross-module references).
   name        = "${var.name}-alb-sg"
   description = "ALB: HTTP from the internet, forwards only to app instances"
   vpc_id      = var.vpc_id
@@ -19,6 +20,7 @@ resource "aws_security_group" "alb" {
 }
 
 resource "aws_security_group" "app" {
+  #checkov:skip=CKV2_AWS_5:False positive - attached to the launch template in the compute module.
   name        = "${var.name}-app-sg"
   description = "App EC2: traffic only from the ALB"
   vpc_id      = var.vpc_id
@@ -26,6 +28,7 @@ resource "aws_security_group" "app" {
 }
 
 resource "aws_security_group" "db" {
+  #checkov:skip=CKV2_AWS_5:False positive - attached to the RDS instance in the data module.
   name        = "${var.name}-db-sg"
   description = "RDS: PostgreSQL only from app instances"
   vpc_id      = var.vpc_id

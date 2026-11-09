@@ -3,6 +3,7 @@
 # Lives in bootstrap so images survive `terraform destroy` of the dev environment.
 # ---------------------------------------------------------------------------
 resource "aws_ecr_repository" "app" {
+  #checkov:skip=CKV_AWS_136:AES256 encryption at rest is used; a customer-managed KMS key costs ~$1/month.
   name = var.ecr_repository_name
 
   # Tags are git commit IDs and can never be overwritten, so every deploy points at
