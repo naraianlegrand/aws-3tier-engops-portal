@@ -3,8 +3,8 @@ variable "name" {
   type        = string
 }
 
-variable "alarm_email" {
-  description = "Where alarm notifications go. AWS sends a confirmation email that must be clicked once."
+variable "sns_topic_arn" {
+  description = "SNS topic (from bootstrap/) that alarm and OK notifications are sent to."
   type        = string
 }
 

@@ -1,0 +1,110 @@
+# Terraform pipeline: on every pull request that touches infrastructure, check formatting,
+# validity, lint rules and security, then show what `terraform plan` would change.
+# `apply` is NOT automated: Karthik runs it himself after reviewing the plan.
+name: terraform-ci
+
+on:
+  pull_request:
+    paths:
+      - "infra/**"
+      - "bootstrap/**"
+      - ".tflint.hcl"
+      - ".github/workflows/terraform-ci.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  TF_VERSION: "1.12.2" # same version used locally
+  AWS_REGION: ca-central-1
+
+jobs:
+  static:
+    name: fmt / validate / tflint / checkov
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: bash # -eo pipefail: any failing command fails the step
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: hashicorp/setup-terraform@v4
+        with:
+          terraform_version: ${{ env.TF_VERSION }}
+
+      - name: terraform fmt
+        run: terraform fmt -check -recursive
+
+      - name: terraform validate (dev + bootstrap)
+        run: |
+          for dir in infra/envs/dev bootstrap; do
+            echo "::group::$dir"
+            terraform -chdir="$dir" init -backend=false -input=false
+            terraform -chdir="$dir" validate
+            echo "::endgroup::"
+          done
+
+      - uses: terraform-linters/setup-tflint@v6
+        with:
+          tflint_version: v0.65.0
+
+      - name: tflint
+        env:
+          GITHUB_TOKEN: ${{ github.token }} # avoids GitHub API rate limits when downloading the AWS plugin
+        run: |
+          tflint --init --config "$GITHUB_WORKSPACE/.tflint.hcl"
+          tflint --recursive --config "$GITHUB_WORKSPACE/.tflint.hcl" --format compact
+
+      - name: checkov (security scan)
+        uses: bridgecrewio/checkov-action@v12
+        with:
+          directory: .
+          framework: terraform
+          quiet: true # only show failures
+          compact: true
+          # Accepted risks are skipped inline (#checkov:skip=... with a reason) on each resource.
+          # Anything new fails the build (ADR 0010).
+
+  plan:
+    name: terraform plan (dev, read-only)
+    needs: static
+    # Runs once the read-only plan role exists (bootstrap) and its ARN is set as a repo variable.
+    if: vars.AWS_PLAN_ROLE_ARN != ''
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write # request a GitHub OIDC token for AWS
+    defaults:
+      run:
+        shell: bash
+        working-directory: infra/envs/dev
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: hashicorp/setup-terraform@v4
+        with:
+          terraform_version: ${{ env.TF_VERSION }}
+          terraform_wrapper: false
+
+      - name: Get temporary read-only AWS credentials (OIDC)
+        uses: aws-actions/configure-aws-credentials@v6
+        with:
+          role-to-assume: ${{ vars.AWS_PLAN_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: terraform init (S3 backend)
+        run: terraform init -input=false
+
+      # -lock=false: the role is read-only and plan writes nothing, so no state lock is taken.
+      # alb_ingress_cidrs uses a documentation placeholder; the real IP stays in local tfvars.
+      - name: terraform plan
+        run: |
+          terraform plan -input=false -lock=false -no-color \
+            -var='alb_ingress_cidrs=["203.0.113.10/32"]' | tee plan.txt
+          {
+            echo "### terraform plan: infra/envs/dev"
+            echo '```'
+            grep -E '^(Plan:|No changes)' plan.txt || echo "(see job log)"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"

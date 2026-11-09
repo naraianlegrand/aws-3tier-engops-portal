@@ -3,6 +3,8 @@
 # Created here because the instances need it from their first boot; Step 7 adds alarms.
 # ---------------------------------------------------------------------------
 resource "aws_cloudwatch_log_group" "app" {
+  #checkov:skip=CKV_AWS_158:Dev cost - a customer-managed KMS key is ~$1/month; logs are encrypted at rest by CloudWatch by default.
+  #checkov:skip=CKV_AWS_338:Dev - 7-day retention keeps cost near zero. Production: 1 year or per policy.
   name              = var.log_group_name
   retention_in_days = var.log_retention_days
 }
@@ -29,6 +31,7 @@ data "aws_ami" "al2023" {
 # Launch template: the recipe every ASG instance is built from.
 # ---------------------------------------------------------------------------
 resource "aws_launch_template" "app" {
+  #checkov:skip=CKV_AWS_341:Hop limit 2 is required so the Docker container can reach IMDSv2 for instance-role credentials (ADR 0009). IMDSv2 tokens are still required.
   name                   = "${var.name}-app"
   image_id               = data.aws_ami.al2023.id
   instance_type          = var.instance_type
@@ -92,6 +95,10 @@ resource "aws_launch_template" "app" {
 # ALB: the public entry point (presentation tier), in the public subnets.
 # ---------------------------------------------------------------------------
 resource "aws_lb" "app" {
+  #checkov:skip=CKV2_AWS_20:No domain/certificate yet, so no HTTPS to redirect to. Ingress is restricted to allowed IPs (ADR 0009).
+  #checkov:skip=CKV2_AWS_28:Dev cost - WAF is ~$5+/month. Ingress is restricted to allowed IPs. Production: AWS WAF managed rules.
+  #checkov:skip=CKV_AWS_91:Dev cost/noise - access logs need a dedicated S3 bucket. Production: enable.
+  #checkov:skip=CKV_AWS_150:Dev - destroyed after every session. Production: deletion protection on.
   name                       = "${var.name}-alb"
   load_balancer_type         = "application"
   internal                   = false
@@ -102,6 +109,7 @@ resource "aws_lb" "app" {
 }
 
 resource "aws_lb_target_group" "app" {
+  #checkov:skip=CKV_AWS_378:ALB-to-instance traffic stays inside the VPC on private subnets. Production: TLS terminates at the ALB (ACM certificate).
   name                 = "${var.name}-tg"
   port                 = var.app_port
   protocol             = "HTTP"
@@ -121,6 +129,8 @@ resource "aws_lb_target_group" "app" {
 }
 
 resource "aws_lb_listener" "http" {
+  #checkov:skip=CKV_AWS_2:No domain/certificate yet. Ingress is restricted to allowed IPs. Production: HTTPS listener + HTTP->HTTPS redirect.
+  #checkov:skip=CKV_AWS_103:Same as CKV_AWS_2 - TLS policy applies once an HTTPS listener exists.
   load_balancer_arn = aws_lb.app.arn
   port              = 80
   protocol          = "HTTP"

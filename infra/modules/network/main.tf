@@ -4,6 +4,7 @@ data "aws_region" "current" {}
 # VPC: our private network inside AWS
 # ---------------------------------------------------------------------------
 resource "aws_vpc" "this" {
+  #checkov:skip=CKV2_AWS_11:Dev cost - flow logs bill per GB ingested. Production: enable VPC flow logs to CloudWatch or S3.
   cidr_block = var.vpc_cidr
 
   # Needed so instances get DNS names and can resolve AWS endpoints (RDS, S3, etc.).

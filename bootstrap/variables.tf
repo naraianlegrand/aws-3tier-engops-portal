@@ -5,7 +5,7 @@ variable "region" {
 }
 
 variable "budget_alert_email" {
-  description = "Email address that receives AWS Budgets alerts. Set it in terraform.tfvars (gitignored)."
+  description = "Email that receives AWS Budgets alerts and CloudWatch alarm notifications. Set it in terraform.tfvars (gitignored)."
   type        = string
 }
 

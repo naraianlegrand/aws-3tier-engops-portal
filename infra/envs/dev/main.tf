@@ -100,11 +100,16 @@ module "compute" {
   log_group_name    = local.app_log_group_name
 }
 
+# Permanent alerts topic from bootstrap/ (email subscription confirmed once).
+data "aws_sns_topic" "alerts" {
+  name = "engops-portal-alerts"
+}
+
 module "monitoring" {
   source = "../../modules/monitoring"
 
-  name        = var.name
-  alarm_email = var.alarm_email
+  name          = var.name
+  sns_topic_arn = data.aws_sns_topic.alerts.arn
 
   alb_arn_suffix          = module.compute.alb_arn_suffix
   target_group_arn_suffix = module.compute.target_group_arn_suffix
