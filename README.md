@@ -1,8 +1,9 @@
 # EngOps Portal: AWS 3-Tier Architecture with Terraform
 
-> **Status: 🚧 Phase 0 in progress (Steps 1–4 of 9 done).**
-> The network, security and data tiers are written in Terraform and have been deployed, checked
-> in the AWS console, and destroyed. The app, compute tier, monitoring and CI/CD are *planned*.
+> **Status: 🚧 Phase 0 in progress (Steps 1–7 of 9 done).**
+> The full 3-tier stack (VPC, ALB, EC2 Auto Scaling Group, RDS, S3) has been deployed with Terraform,
+> used end to end through the load balancer, crash-tested (self-healing + alarm), and destroyed.
+> Remaining: CI for Terraform (Step 8) and the final destroy/re-apply proof (Step 9).
 > This README only describes what actually works.
 
 An internal request tracker for engineering teams ("Revit crashes on file X", "need a new template"),
@@ -15,11 +16,11 @@ flowchart TB
     U[User / Browser] --> ALB
     subgraph VPC["VPC 10.0.0.0/16 · ca-central-1 · 2 AZs"]
         subgraph PUB["Public subnets"]
-            ALB[Application Load Balancer<br/><i>planned</i>]
+            ALB[Application Load Balancer]
             NAT[NAT Gateway]
         end
         subgraph APP["Private app subnets"]
-            ASG[EC2 Auto Scaling Group<br/>FastAPI in Docker<br/><i>planned</i>]
+            ASG[EC2 Auto Scaling Group<br/>FastAPI in Docker]
         end
         subgraph DB["Private DB subnets"]
             RDS[(RDS PostgreSQL)]
@@ -34,8 +35,8 @@ flowchart TB
 
 | Tier | Component | Subnets | Status |
 |---|---|---|---|
-| Presentation | Application Load Balancer | Public | Planned (Step 6) |
-| Application | FastAPI in Docker on EC2 (Auto Scaling Group) | Private app | Planned (Steps 5–6) |
+| Presentation | Application Load Balancer (HTTP, restricted to allowed IPs) | Public | ✅ Built and tested |
+| Application | FastAPI in Docker on EC2 (Auto Scaling Group, min 1 / max 2, CPU scaling) | Private app | ✅ Built and tested |
 | Data | RDS PostgreSQL + S3 | Private DB / S3 | ✅ Built and tested |
 
 ### Security group chain
@@ -57,8 +58,8 @@ plus HTTPS to AWS APIs, and the DB has no outbound rules. No SSH: admin access i
 | 3 | Security: chained security groups, least-privilege EC2 role + instance profile | ✅ Deployed, tested, destroyed |
 | 4 | Data: RDS PostgreSQL (private, encrypted, RDS-managed secret) + private S3 bucket | ✅ Deployed, tested, destroyed |
 | 5 | App (FastAPI + Docker + ECR) | ✅ Done: app tested locally (SQLite) with 18 passing tests; GitHub Actions tests, builds and pushes the image to ECR via OIDC (local Docker blocked by a WSL bug, see ADR 0007) |
-| 6 | Compute (launch template, ASG, ALB) | ✅ Deployed: app served through the ALB, target healthy, container logs in CloudWatch, password read from Secrets Manager |
-| 7 | Monitoring (CloudWatch alarms, SNS email) | ⏳ In progress: code written, not yet deployed |
+| 6 | Compute (launch template, ASG, ALB) | ✅ Deployed and tested: app used through the ALB (request created, file uploaded to S3, downloaded), container logs in CloudWatch, password read from Secrets Manager. **Self-healing tested:** stopped the container, and the ASG replaced the instance automatically |
+| 7 | Monitoring (CloudWatch alarms, SNS email) | ✅ Deployed: `no-healthy-hosts` alarm went OK → ALARM → OK during the crash test. Email delivery not yet verified (subscription was not confirmed) |
 | 8 | CI/CD (GitHub Actions + OIDC) | Planned |
 | 9 | Full apply → test → destroy → re-apply, with screenshots | Planned |
 
