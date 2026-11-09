@@ -47,3 +47,6 @@ local-uploads/
 Thumbs.db
 .vscode/
 .idea/
+
+# Uncropped screenshots (personal browser tabs / inbox): local only
+docs/screenshots/_originals/
