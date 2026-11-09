@@ -1,0 +1,66 @@
+# App pipeline: test on every push/PR; on main, build the Docker image and push it to ECR.
+name: app-ci
+
+on:
+  push:
+    branches: [main]
+    paths: ["app/**", ".github/workflows/app-ci.yml"]
+  pull_request:
+    paths: ["app/**", ".github/workflows/app-ci.yml"]
+  workflow_dispatch: # manual "Run workflow" button
+
+# Default: the workflow can only read the repo. Jobs ask for more only if they need it.
+permissions:
+  contents: read
+
+env:
+  AWS_REGION: ca-central-1
+  ECR_REPOSITORY: engops-portal
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: app
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.12" # same as the Docker image
+          cache: pip
+          cache-dependency-path: app/requirements-dev.txt
+
+      - run: pip install -r requirements-dev.txt
+      - run: python -m pytest -q
+
+  build-and-push:
+    needs: test # only build an image if the tests passed
+    # Only on main (never for pull requests), and only once the AWS role is configured.
+    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request' && vars.AWS_CI_ROLE_ARN != ''
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write # lets this job request a GitHub OIDC token to exchange for AWS credentials
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Get temporary AWS credentials (OIDC, no stored keys)
+        uses: aws-actions/configure-aws-credentials@v6
+        with:
+          role-to-assume: ${{ vars.AWS_CI_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Log in to ECR
+        id: ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Build and push image (tag = commit ID)
+        env:
+          REGISTRY: ${{ steps.ecr.outputs.registry }}
+        run: |
+          IMAGE="$REGISTRY/$ECR_REPOSITORY:$GITHUB_SHA"
+          docker build -t "$IMAGE" app
+          docker push "$IMAGE"
+          echo "Pushed \`$IMAGE\`" >> "$GITHUB_STEP_SUMMARY"

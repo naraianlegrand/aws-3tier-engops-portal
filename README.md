@@ -56,7 +56,7 @@ plus HTTPS to AWS APIs, and the DB has no outbound rules. No SSH: admin access i
 | 2 | Network: VPC, 6 subnets across 2 AZs, IGW, single NAT (switchable), S3 gateway endpoint | ✅ Deployed, tested, destroyed |
 | 3 | Security: chained security groups, least-privilege EC2 role + instance profile | ✅ Deployed, tested, destroyed |
 | 4 | Data: RDS PostgreSQL (private, encrypted, RDS-managed secret) + private S3 bucket | ✅ Deployed, tested, destroyed |
-| 5 | App (FastAPI + Docker + ECR) | ⏳ In progress: app + 18 passing tests done; local Docker run and ECR push next |
+| 5 | App (FastAPI + Docker + ECR) | ⏳ In progress: app runs locally (SQLite) with 18 passing tests; image build moved to GitHub Actions (local Docker blocked by a WSL bug); ECR push next |
 | 6 | Compute (launch template, ASG, ALB) | Planned |
 | 7 | Monitoring (CloudWatch alarms, SNS) | Planned |
 | 8 | CI/CD (GitHub Actions + OIDC) | Planned |
@@ -108,6 +108,8 @@ Workflow: apply → test → destroy the same day. Budget alerts fire at $1 and 
 | [0004](docs/adr/0004-ssm-instead-of-ssh.md) | SSM Session Manager instead of SSH or a bastion host |
 | [0005](docs/adr/0005-db-credentials-rds-managed-secret.md) | RDS-managed DB password in Secrets Manager, never in code or state |
 | [0006](docs/adr/0006-liveness-vs-readiness-health-checks.md) | ALB health check doesn't depend on the database (liveness vs. readiness) |
+| [0007](docs/adr/0007-ecr-in-bootstrap-immutable-tags.md) | ECR in bootstrap, immutable commit-ID tags, images built in CI |
+| [0008](docs/adr/0008-github-oidc-for-ci.md) | GitHub Actions uses OIDC (no stored AWS keys), scoped to this repo's main branch |
 
 ## Known gaps (what I'd tighten for production)
 
