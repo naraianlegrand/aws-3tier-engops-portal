@@ -8,6 +8,11 @@ variable "vpc_id" {
   type        = string
 }
 
+variable "alb_ingress_cidrs" {
+  description = "Client IP ranges allowed to reach the ALB, e.g. [\"203.0.113.10/32\"]. Use 0.0.0.0/0 only once the app has authentication."
+  type        = list(string)
+}
+
 variable "app_port" {
   description = "Port the FastAPI container listens on."
   type        = number

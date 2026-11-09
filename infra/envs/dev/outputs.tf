@@ -1,3 +1,17 @@
+output "app_url" {
+  description = "Open this in your browser (works only from the IPs in alb_ingress_cidrs)."
+  value       = "http://${module.compute.alb_dns_name}"
+}
+
+output "app_image" {
+  description = "The exact image (commit ID) the instances run."
+  value       = local.app_image_uri
+}
+
+output "asg_name" {
+  value = module.compute.asg_name
+}
+
 output "vpc_id" {
   value = module.network.vpc_id
 }

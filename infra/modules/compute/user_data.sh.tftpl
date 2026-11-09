@@ -1,0 +1,32 @@
+#!/bin/bash
+# Runs once, as root, on first boot of every instance the ASG launches.
+# Output goes to /var/log/cloud-init-output.log (read it via SSM Session Manager).
+set -euxo pipefail
+
+# 1. Install and start Docker (Amazon Linux 2023 package repos, reached through the NAT).
+dnf install -y docker
+systemctl enable --now docker
+
+# 2. Who am I? (IMDSv2: get a session token first, then ask for the instance ID.)
+TOKEN=$(curl -sS -X PUT "http://169.254.169.254/latest/api/token" -H "X-aws-ec2-metadata-token-ttl-seconds: 300")
+INSTANCE_ID=$(curl -sS -H "X-aws-ec2-metadata-token: $TOKEN" http://169.254.169.254/latest/meta-data/instance-id)
+
+# 3. Log in to ECR with the instance role (no keys), then pull the exact image tag.
+REGISTRY="${registry}"
+aws ecr get-login-password --region "${region}" | docker login --username AWS --password-stdin "$REGISTRY"
+docker pull "${image_uri}"
+
+# 4. Run the app. No password here: the app reads it from Secrets Manager using the instance role.
+docker run -d --name engops --restart always \
+  -p ${app_port}:8000 \
+  --log-driver awslogs \
+  --log-opt awslogs-region="${region}" \
+  --log-opt awslogs-group="${log_group_name}" \
+  --log-opt awslogs-stream="$INSTANCE_ID" \
+  -e ENGOPS_AWS_REGION="${region}" \
+  -e ENGOPS_DB_HOST="${db_host}" \
+  -e ENGOPS_DB_NAME="${db_name}" \
+  -e ENGOPS_DB_SECRET_ARN="${db_secret_arn}" \
+  -e ENGOPS_STORAGE_BACKEND=s3 \
+  -e ENGOPS_FILES_BUCKET="${files_bucket_name}" \
+  "${image_uri}"

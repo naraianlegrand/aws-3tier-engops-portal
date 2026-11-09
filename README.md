@@ -57,7 +57,7 @@ plus HTTPS to AWS APIs, and the DB has no outbound rules. No SSH: admin access i
 | 3 | Security: chained security groups, least-privilege EC2 role + instance profile | ✅ Deployed, tested, destroyed |
 | 4 | Data: RDS PostgreSQL (private, encrypted, RDS-managed secret) + private S3 bucket | ✅ Deployed, tested, destroyed |
 | 5 | App (FastAPI + Docker + ECR) | ✅ Done: app tested locally (SQLite) with 18 passing tests; GitHub Actions tests, builds and pushes the image to ECR via OIDC (local Docker blocked by a WSL bug, see ADR 0007) |
-| 6 | Compute (launch template, ASG, ALB) | ⏳ Next |
+| 6 | Compute (launch template, ASG, ALB) | ⏳ In progress: code written, not yet deployed |
 | 7 | Monitoring (CloudWatch alarms, SNS) | Planned |
 | 8 | CI/CD (GitHub Actions + OIDC) | Planned |
 | 9 | Full apply → test → destroy → re-apply, with screenshots | Planned |
@@ -78,12 +78,13 @@ terraform init; terraform apply
 # Dev environment
 cd ..\infra\envs\dev
 $env:AWS_PROFILE = "engops"
+Copy-Item terraform.tfvars.example terraform.tfvars   # set alb_ingress_cidrs to your IP /32
 terraform init
-terraform plan -var="enable_nat_gateway=false" -out=tfplan   # NAT off until the app needs it
-terraform apply tfplan
+terraform plan -out=tfplan
+terraform apply tfplan          # prints app_url
 
 # Tear down (bootstrap is separate and stays)
-terraform destroy -var="enable_nat_gateway=false"
+terraform destroy
 ```
 
 ## Cost
@@ -110,6 +111,7 @@ Workflow: apply → test → destroy the same day. Budget alerts fire at $1 and 
 | [0006](docs/adr/0006-liveness-vs-readiness-health-checks.md) | ALB health check doesn't depend on the database (liveness vs. readiness) |
 | [0007](docs/adr/0007-ecr-in-bootstrap-immutable-tags.md) | ECR in bootstrap, immutable commit-ID tags, images built in CI |
 | [0008](docs/adr/0008-github-oidc-for-ci.md) | GitHub Actions uses OIDC (no stored AWS keys), scoped to this repo's main branch |
+| [0009](docs/adr/0009-compute-asg-alb-restricted-ingress.md) | ASG behind an ALB with ELB health checks, CPU scaling, IMDSv2; ALB open to my IP only |
 
 ## Known gaps (what I'd tighten for production)
 

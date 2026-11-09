@@ -1,6 +1,6 @@
 # ---------------------------------------------------------------------------
 # The security group chain:
-#   Internet --80--> alb-sg --app_port--> app-sg --5432--> db-sg
+#   Allowed IPs --80--> alb-sg --app_port--> app-sg --5432--> db-sg
 #
 # Rules are separate resources (aws_vpc_security_group_*_rule) instead of inline blocks.
 # Why: alb-sg's egress points at app-sg and app-sg's ingress points at alb-sg.
@@ -33,13 +33,16 @@ resource "aws_security_group" "db" {
 }
 
 # ----- alb-sg -----
-resource "aws_vpc_security_group_ingress_rule" "alb_http_from_internet" {
+# One rule per allowed CIDR. While the app has no login, this is the owner's IP only (ADR 0009).
+resource "aws_vpc_security_group_ingress_rule" "alb_http" {
+  for_each = toset(var.alb_ingress_cidrs)
+
   security_group_id = aws_security_group.alb.id
-  description       = "HTTP from anywhere (HTTPS/443 added later if a domain + certificate exist)"
+  description       = "HTTP from allowed client IPs (HTTPS/443 added later if a domain + certificate exist)"
   ip_protocol       = "tcp"
   from_port         = 80
   to_port           = 80
-  cidr_ipv4         = "0.0.0.0/0"
+  cidr_ipv4         = each.value
 }
 
 resource "aws_vpc_security_group_egress_rule" "alb_to_app" {

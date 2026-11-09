@@ -15,7 +15,18 @@ variable "azs" {
 }
 
 variable "enable_nat_gateway" {
-  description = "false = no NAT (saves ~$0.05/hr) when app instances aren't needed."
+  description = "App instances need the NAT (Docker install, ECR, Secrets Manager, SSM). false only for network-only testing."
   type        = bool
   default     = true
+}
+
+variable "alb_ingress_cidrs" {
+  description = "Your public IP as a /32, set in terraform.tfvars (gitignored). See terraform.tfvars.example."
+  type        = list(string)
+}
+
+variable "app_image_tag" {
+  description = "Image tag (git commit ID) to deploy. null = the most recently pushed image in ECR."
+  type        = string
+  default     = null
 }

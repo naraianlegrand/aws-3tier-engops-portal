@@ -1,0 +1,8 @@
+# Copy to terraform.tfvars (gitignored) and fill in.
+
+# Your public IP, so only you can open the app. Find it in PowerShell:
+#   (Invoke-RestMethod https://checkip.amazonaws.com).Trim()
+alb_ingress_cidrs = ["203.0.113.10/32"]
+
+# Optional: deploy a specific image (git commit ID). Default: most recently pushed image.
+# app_image_tag = "7ee1d5fb767a9b4a7309ddee9256eb664e416ccb"
