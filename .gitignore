@@ -38,6 +38,9 @@ htmlcov/
 *.egg-info/
 .mypy_cache/
 .ruff_cache/
+# Local app runs (SQLite DB + uploaded files)
+*.db
+local-uploads/
 
 # ---------- OS / editor ----------
 .DS_Store
